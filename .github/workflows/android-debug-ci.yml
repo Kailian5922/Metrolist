@@ -37,15 +37,48 @@ jobs:
           packages: platform-tools
 
       - name: Run Android unit tests
+        id: unit-tests
         run: ./gradlew :shared:testAndroidHostTest :androidApp:testDebugUnitTest --no-daemon --console=plain
 
+      - name: Print failing test XML details
+        if: ${{ failure() && steps.unit-tests.outcome == 'failure' }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          for path in sorted(glob.glob("shared/build/test-results/testAndroidHostTest/*.xml") + glob.glob("androidApp/build/test-results/testDebugUnitTest/*.xml")):
+              root = ET.parse(path).getroot()
+              for tc in root.findall("testcase"):
+                  for tag in ("failure", "error"):
+                      node = tc.find(tag)
+                      if node is not None:
+                          print(f"=== {path}: {tc.attrib.get('classname')}.{tc.attrib.get('name')} ===")
+                          print(node.attrib.get("message", ""))
+                          print(node.text or "")
+          PY
+
+      - name: Upload unit test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: android-unit-test-reports
+          path: |
+            shared/build/reports/tests/testAndroidHostTest
+            shared/build/test-results/testAndroidHostTest
+            androidApp/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Run ktlintCheck
+        if: ${{ !cancelled() }}
         run: ./gradlew :shared:ktlintCheck :androidApp:ktlintCheck --no-daemon --console=plain
 
       - name: Assemble debug APK
+        if: ${{ !cancelled() }}
         run: ./gradlew :androidApp:assembleDebug --no-daemon --console=plain
 
       - name: Upload debug APK
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: metrolist-v14.0.0-login-fix-debug-apk
