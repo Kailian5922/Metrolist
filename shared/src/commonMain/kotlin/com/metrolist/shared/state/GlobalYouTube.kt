@@ -70,7 +70,16 @@ object GlobalYouTube {
         systemLanguage: String,
         settings: Settings = Settings.shared,
     ) {
-        val resolvedHl = if (contentLanguage == SYSTEM) systemLanguage.substringBefore('-').substringBefore('_') else contentLanguage
+        val validContentLanguage = isValidContentLanguage(contentLanguage)
+        if (contentLanguage != SYSTEM && !validContentLanguage) {
+            settings.contentLanguage = SYSTEM
+        }
+        val resolvedHl =
+            if (validContentLanguage) {
+                contentLanguage
+            } else {
+                systemLanguage.substringBefore('-').substringBefore('_')
+            }
         val validContentCountry = contentCountry in contentCountryCodes
         if (contentCountry != SYSTEM && !validContentCountry) {
             settings.contentCountry = SYSTEM
@@ -109,6 +118,20 @@ object GlobalYouTube {
         runCatching { KoinPlatform.getKoinOrNull()?.getOrNull<TokenProvider>()?.close() }
         innerTube.close()
         client.close()
+    }
+}
+
+private fun isValidContentLanguage(languageTag: String): Boolean {
+    if (languageTag.isBlank() || languageTag == GlobalYouTube.SYSTEM || languageTag.equals("SYSTEM_DEFAULT", ignoreCase = true)) {
+        return false
+    }
+    val subtags = languageTag.split('-')
+    val primary = subtags.first()
+    if (primary.length !in 2..3 || !primary.all { it in 'a'..'z' || it in 'A'..'Z' } || primary.equals("und", ignoreCase = true)) {
+        return false
+    }
+    return subtags.drop(1).all { subtag ->
+        subtag.length in 1..8 && subtag.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' }
     }
 }
 

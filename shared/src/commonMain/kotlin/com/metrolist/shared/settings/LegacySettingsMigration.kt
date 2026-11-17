@@ -304,6 +304,9 @@ private val floatKeys =
 
 internal fun migrateLegacySettings(settings: KmpSettings) {
     val migrationVersion = settings.readIntOrNull(LEGACY_MIGRATION_VERSION_KEY) ?: 0
+    listOf("appLanguage", "contentLanguage", "contentCountry").forEach { key ->
+        normalizeStringSetting(settings, key) { if (it == "SYSTEM_DEFAULT") "SYSTEM" else null }
+    }
     if (migrationVersion < LEGACY_MIGRATION_VERSION) removedUnusedSettingsKeys.forEach(settings::remove)
     if (migrationVersion in 11 until LEGACY_MIGRATION_VERSION) restoreCanvasToggle(settings)
     if (migrationVersion == 11) {
@@ -462,7 +465,7 @@ internal fun convertLegacyValue(
             ThemeMode.AUTO.ordinal
         }
 
-        key == "appLanguage" && value == "SYSTEM_DEFAULT" -> {
+        (key == "appLanguage" || key == "contentLanguage" || key == "contentCountry") && value == "SYSTEM_DEFAULT" -> {
             "SYSTEM"
         }
 

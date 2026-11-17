@@ -1077,6 +1077,11 @@ class Settings(
         if (backup.entries.any { it.key == "pureBlack" && it.value == "true" }) {
             entries["themeMode"] = PortableSetting("themeMode", SettingType.INT, ThemeMode.PURE_BLACK.ordinal.toString())
         }
+        listOf("appLanguage", "contentLanguage", "contentCountry").forEach { key ->
+            if (entries[key]?.value == "SYSTEM_DEFAULT") {
+                entries[key] = PortableSetting(key, SettingType.STRING, "SYSTEM")
+            }
+        }
         settings.applyBatch(entries.values.toList(), removedKeys)
         flush()
         preferenceRefreshers.values.forEach { it() }

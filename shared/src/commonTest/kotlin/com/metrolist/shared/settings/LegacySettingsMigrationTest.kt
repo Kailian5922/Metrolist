@@ -311,6 +311,8 @@ class LegacySettingsMigrationTest {
             MapSettings(
                 "darkMode" to "ON",
                 "appLanguage" to "SYSTEM_DEFAULT",
+                "contentLanguage" to "SYSTEM_DEFAULT",
+                "contentCountry" to "SYSTEM_DEFAULT",
                 "SwipeToSong" to true,
                 "SwipeToRemoveSong" to false,
                 "show_liked_playlist" to false,
@@ -353,6 +355,8 @@ class LegacySettingsMigrationTest {
 
         assertEquals(ThemeMode.DARK, settings.themeMode)
         assertEquals("SYSTEM", settings.appLanguage)
+        assertEquals("SYSTEM", settings.contentLanguage)
+        assertEquals("SYSTEM", settings.contentCountry)
         assertTrue(settings.swipeToSong)
         assertFalse(settings.swipeToRemoveSong)
         assertFalse(settings.showLikedPlaylist)
@@ -601,6 +605,50 @@ class LegacySettingsMigrationTest {
         assertFalse(backing.hasKey("proxyUrl"))
         assertFalse(backing.hasKey("proxyUsername"))
         assertFalse(backing.hasKey("proxyPassword"))
+    }
+
+    @Test
+    fun migratesLegacySystemDefaultContentLocaleAcrossVersionsAndBackups() {
+        for (version in listOf(0, 2, 11, 14)) {
+            val backing =
+                MapSettings(
+                    "settingsMigrationVersion" to version,
+                    "appLanguage" to "SYSTEM_DEFAULT",
+                    "contentLanguage" to "SYSTEM_DEFAULT",
+                    "contentCountry" to "SYSTEM_DEFAULT",
+                )
+            val settings = Settings(StrictTypedSettings(backing))
+            assertEquals("SYSTEM", settings.appLanguage)
+            assertEquals("SYSTEM", settings.contentLanguage)
+            assertEquals("SYSTEM", settings.contentCountry)
+        }
+
+        val settings = Settings(MapSettings())
+        val portableFromLegacy =
+            settings.portableSettingsFromLegacy(
+                mapOf(
+                    "appLanguage" to "SYSTEM_DEFAULT",
+                    "contentLanguage" to "SYSTEM_DEFAULT",
+                    "contentCountry" to "SYSTEM_DEFAULT",
+                ),
+            )
+        assertEquals("SYSTEM", portableFromLegacy.entries.single { it.key == "appLanguage" }.value)
+        assertEquals("SYSTEM", portableFromLegacy.entries.single { it.key == "contentLanguage" }.value)
+        assertEquals("SYSTEM", portableFromLegacy.entries.single { it.key == "contentCountry" }.value)
+
+        settings.importBackupSettings(
+            PortableSettings(
+                entries =
+                    listOf(
+                        PortableSetting("appLanguage", SettingType.STRING, "SYSTEM_DEFAULT"),
+                        PortableSetting("contentLanguage", SettingType.STRING, "SYSTEM_DEFAULT"),
+                        PortableSetting("contentCountry", SettingType.STRING, "SYSTEM_DEFAULT"),
+                    ),
+            ),
+        )
+        assertEquals("SYSTEM", settings.appLanguage)
+        assertEquals("SYSTEM", settings.contentLanguage)
+        assertEquals("SYSTEM", settings.contentCountry)
     }
 }
 

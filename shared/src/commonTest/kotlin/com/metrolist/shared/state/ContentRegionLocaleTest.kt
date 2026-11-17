@@ -90,6 +90,36 @@ class ContentRegionLocaleTest {
     }
 
     @Test
+    fun invalidSavedLanguagesReturnToSystemAndInvalidateStaleHomeData() {
+        for (language in listOf("SYSTEM_DEFAULT", "", "und")) {
+            val settings =
+                freshSettings().apply {
+                    contentLanguage = language
+                    lastResolvedContentCountry = "NL"
+                    lastResolvedContentLanguage = language
+                    visitorData = "keep-visitor"
+                    lastHomePageJson = "stale-home"
+                }
+            GlobalYouTube.innerTube.visitorData = "keep-visitor"
+
+            GlobalYouTube.applyContentRegion(
+                contentCountry = "NL",
+                contentLanguage = settings.contentLanguage,
+                systemCountry = "NL",
+                systemLanguage = "pl-PL",
+                settings = settings,
+            )
+
+            assertEquals(GlobalYouTube.SYSTEM, settings.contentLanguage, language)
+            assertEquals("NL", GlobalYouTube.innerTube.locale.gl, language)
+            assertEquals("pl", GlobalYouTube.innerTube.locale.hl, language)
+            assertEquals("pl", settings.lastResolvedContentLanguage, language)
+            assertEquals("keep-visitor", settings.visitorData, language)
+            assertEquals("", settings.lastHomePageJson, language)
+        }
+    }
+
+    @Test
     fun validSavedCountryRemainsIndependentOfSystemRegion() {
         val settings = freshSettings().apply { contentCountry = "NL" }
 

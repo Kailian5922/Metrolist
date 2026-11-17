@@ -223,6 +223,7 @@ fun LoginScreen(
 
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     val popupWebViews = remember { mutableSetOf<WebView>() }
+    var pendingAuthData by remember { mutableStateOf<AuthData?>(null) }
     var pendingAccounts by remember { mutableStateOf<List<AccountsListResponse.Account>?>(null) }
     var selectedAccount by remember { mutableStateOf<AccountsListResponse.Account?>(null) }
 
@@ -330,6 +331,7 @@ fun LoginScreen(
 
         when (accountDiscoveryAction(accounts.size, isSwitchingChannel)) {
             AccountDiscoveryAction.SELECT_ACCOUNT -> {
+                pendingAuthData = authData
                 pendingAccounts = accounts
                 selectedAccount = accounts.firstOrNull { it.isSelected } ?: accounts.firstOrNull()
                 loginStage = LoginStage.SelectingAccount
@@ -645,7 +647,11 @@ fun LoginScreen(
                 )
             }
 
-            if (tvWarningAccepted && isLoading && loginStage != LoginStage.SelectingAccount) {
+            if (
+                tvWarningAccepted &&
+                (isLoading || loginStage == LoginStage.CheckingAccounts || loginStage == LoginStage.Completing) &&
+                loginStage != LoginStage.SelectingAccount
+            ) {
                 ContainedLoadingIndicator(
                     modifier = Modifier.align(Alignment.Center),
                 )
@@ -713,11 +719,13 @@ fun LoginScreen(
                                         loginStage = LoginStage.Completing
                                         coroutineScope.launch {
                                             val authData =
-                                                extractAuthData(webViewRef) ?: run {
-                                                    errorMessage = getString(Res.string.authentication_data_extraction_failed)
-                                                    loginStage = LoginStage.Authenticating
-                                                    return@launch
-                                                }
+                                                pendingAuthData
+                                                    ?: extractAuthData(webViewRef)
+                                                    ?: run {
+                                                        errorMessage = getString(Res.string.authentication_data_extraction_failed)
+                                                        loginStage = LoginStage.Authenticating
+                                                        return@launch
+                                                    }
                                             val identity = account.selectionDataSyncId(authData.dataSyncId)
                                             if (identity != null) {
                                                 finalizeLogin(authData.copy(dataSyncId = identity))

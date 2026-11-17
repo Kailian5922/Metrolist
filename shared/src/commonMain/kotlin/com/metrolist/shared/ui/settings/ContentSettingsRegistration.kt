@@ -25,6 +25,7 @@ import com.metrolist.shared.generated.resources.*
 import com.metrolist.shared.settings.AiSlopBlocklist
 import com.metrolist.shared.settings.BlockedContent
 import com.metrolist.shared.settings.Settings
+import com.metrolist.shared.state.GlobalYouTube
 import com.metrolist.shared.ui.icons.MetrolistIcons
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -74,34 +75,40 @@ internal fun SettingsUiRegistryBuilder.registerContentSettings(host: SharedSetti
         if (contentLanguageChoices.isNotEmpty() || contentCountryChoices.isNotEmpty() || appLanguageChoices.isNotEmpty()) {
             group("localization", stringResource(Res.string.settings_localization)) {
                 if (contentLanguageChoices.isNotEmpty()) {
+                    val selectedContentLanguage =
+                        contentLanguageChoices.firstOrNull { it.id == settings.contentLanguage }?.id ?: GlobalYouTube.SYSTEM
                     choice(
                         id = "contentLanguage",
                         title = stringResource(Res.string.settings_content_language),
                         valueLabel =
-                            contentLanguageChoices.firstOrNull { it.id == settings.contentLanguage }?.label ?: settings.contentLanguage,
+                            contentLanguageChoices.firstOrNull { it.id == selectedContentLanguage }?.label ?: selectedContentLanguage,
                         choices = contentLanguageChoices,
-                        selectedChoiceId = settings.contentLanguage,
+                        selectedChoiceId = selectedContentLanguage,
                         description = stringResource(Res.string.settings_content_language_summary),
                     ) { host.onHostChoiceSelected(SettingsHostChoice.CONTENT_LANGUAGE, it) }
                 }
                 if (contentCountryChoices.isNotEmpty()) {
+                    val selectedContentCountry =
+                        contentCountryChoices.firstOrNull { it.id == settings.contentCountry }?.id ?: GlobalYouTube.SYSTEM
                     choice(
                         id = "contentCountry",
                         title = stringResource(Res.string.settings_content_country),
                         valueLabel =
-                            contentCountryChoices.firstOrNull { it.id == settings.contentCountry }?.label ?: settings.contentCountry,
+                            contentCountryChoices.firstOrNull { it.id == selectedContentCountry }?.label ?: selectedContentCountry,
                         choices = contentCountryChoices,
-                        selectedChoiceId = settings.contentCountry,
+                        selectedChoiceId = selectedContentCountry,
                         description = stringResource(Res.string.settings_content_country_summary),
                     ) { host.onHostChoiceSelected(SettingsHostChoice.CONTENT_COUNTRY, it) }
                 }
                 if (appLanguageChoices.isNotEmpty()) {
+                    val selectedAppLanguage =
+                        appLanguageChoices.firstOrNull { it.id == settings.appLanguage }?.id ?: GlobalYouTube.SYSTEM
                     choice(
                         id = "appLanguage",
                         title = stringResource(Res.string.app_language),
-                        valueLabel = appLanguageChoices.firstOrNull { it.id == settings.appLanguage }?.label ?: settings.appLanguage,
+                        valueLabel = appLanguageChoices.firstOrNull { it.id == selectedAppLanguage }?.label ?: selectedAppLanguage,
                         choices = appLanguageChoices,
-                        selectedChoiceId = settings.appLanguage,
+                        selectedChoiceId = selectedAppLanguage,
                     ) { host.onHostChoiceSelected(SettingsHostChoice.APP_LANGUAGE, it) }
                 }
             }
